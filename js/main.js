@@ -132,22 +132,24 @@ document.addEventListener('keydown', (e) => {
 //*карточки с меню при использовании классов и работа с сервером db.json
 
 class MenuCard {
-	constructor(menuTitle, img, alt, description, price, parentSelector, ...classes) {
+	constructor(menuTitle, img, alt, description, price, transfer, parentSelector, ...classes) {
 		this.menuTitle = menuTitle
 		this.img = img
 		this.alt = alt
 		this.description = description
 		this.price = price
 		this.classes = classes
+		this.transfer = transfer
 		this.parent = document.querySelector(parentSelector)
 	}
 	//TODO:понять как можно дождаться расчёта прайса до рендера
-	async changeCurrency() {
-		this.transfer = await fetch('http://localhost:3000/transfer')
-			.then((response) => response.json())
-			.then((value) => value[0].exchangeRate)
+	changeCurrency() {
+		// this.transfer = await fetch('http://localhost:3000/transfer')
+		// 	.then((response) => response.json())
+		// 	.then((value) => value[0].exchangeRate)
+		// this.price = this.price * this.transfer
+		// console.log(this.price)
 		this.price = this.price * this.transfer
-		console.log(this.price)
 	}
 
 	render() {
@@ -172,7 +174,7 @@ class MenuCard {
 				<div class="menu__item-divider"></div>
 				<div class="menu__item-price">
 					<div class="menu__item-cost">Цена:</div>
-					<div class="menu__item-total"><span>${this.price}</span> грн/день</div>
+					<div class="menu__item-total"><span>${this.price}</span> руб/день</div>
 				</div>`
 		this.parent.append(element)
 	}
@@ -183,12 +185,23 @@ const getData = async (url) => {
 	if (!res.ok) {
 		throw new Error(`Could not fetch ${url}, status ${res.status}`)
 	}
-	return await res.json()
+	const transfer = await fetch('http://localhost:3000/transfer')
+	if (!transfer.ok) {
+		throw new Error(`Could not fetch for transfer, status ${transfer.status}`)
+	}
+	const awaitRes = await res.json()
+	const awaitTransfer = await transfer.json()
+	awaitRes.forEach((item) => {
+		item.transfer = awaitTransfer[0].exchangeRate
+	})
+	data = [...awaitRes]
+
+	return data
 }
 
 getData('http://localhost:3000/menu').then((data) => {
-	data.forEach(({ img, title, altimg, descr, price }) => {
-		new MenuCard(title, img, altimg, descr, price, '.menu__field .container', 'menu__item', 'big').render()
+	data.forEach(({ img, title, altimg, descr, price, transfer }) => {
+		new MenuCard(title, img, altimg, descr, price, transfer, '.menu__field .container', 'menu__item', 'big').render()
 	})
 })
 
