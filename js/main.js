@@ -142,13 +142,8 @@ class MenuCard {
 		this.transfer = transfer
 		this.parent = document.querySelector(parentSelector)
 	}
-	//TODO:понять как можно дождаться расчёта прайса до рендера
+
 	changeCurrency() {
-		// this.transfer = await fetch('http://localhost:3000/transfer')
-		// 	.then((response) => response.json())
-		// 	.then((value) => value[0].exchangeRate)
-		// this.price = this.price * this.transfer
-		// console.log(this.price)
 		this.price = this.price * this.transfer
 	}
 
@@ -295,51 +290,183 @@ function showThanksModal(message) {
 const slideButtons = document.querySelectorAll('.offer__slider-counter div')
 const slides = document.querySelectorAll('.offer__slide')
 const sliderWrapper = document.querySelector('.offer__slider-wrapper')
+const sliderInner = document.querySelector('.offer__slider-inner')
 const currentSlide = document.querySelector('#current')
 const totalSlides = document.querySelector('#total')
-let current = 2
+const width = window.getComputedStyle(sliderWrapper).width
+let offset = 0
+let current = 1
 
-totalSlides.innerHTML = slides.length > 10 ? `${slides.length}` : `0${slides.length}`
+function optionsForSlider() {
+	totalSlides.textContent = slides.length > 10 ? `${slides.length}` : `0${slides.length}`
 
-const hideSlides = () => {
+	sliderInner.style.display = 'flex'
+	sliderInner.style.width = 100 * slides.length + '%'
+	sliderInner.style.transition = '0.5s all'
+
+	sliderWrapper.style.overflow = 'hidden'
+
 	slides.forEach((slide) => {
-		slide.classList.remove('show')
-		slide.classList.add('hide')
+		slide.style.width = width
 	})
 }
 
-const showSlides = (i) => {
-	if (i + 1 < 10) {
-		currentSlide.textContent = `0${i + 1}`
-	} else {
-		currentSlide.textContent = `${i + 1}`
-	}
-	slides[i].classList.add('show')
-	slides[i].classList.remove('hide')
+const changeSlideIndex = (i) => {
+	currentSlide.textContent = i > 10 ? `${i}` : `0${i}`
+}
+
+changeSlideIndex(current)
+
+if (localStorage.getItem('slideIndex')) {
+	changeSlideIndex(+localStorage.getItem('slideIndex'))
+	current = +localStorage.getItem('slideIndex')
+	offset = +localStorage.getItem('offset')
+	sliderInner.style.transform = `translateX(-${offset}px)`
 }
 
 const nextSlide = () => {
-	current = current >= slides.length - 1 ? 0 : current + 1
-	showSlides(current)
+	current = current >= slides.length ? 1 : current + 1
+	if (offset == deleteNotDigits(width) * (slides.length - 1)) {
+		offset = 0
+	} else {
+		offset += deleteNotDigits(width)
+	}
+	localStorage.setItem('offset', offset)
+	changeSlideIndex(current)
+	localStorage.setItem('slideIndex', current)
+	sliderInner.style.transform = `translateX(-${offset}px)`
 }
 
 const prevSlide = () => {
-	current = current <= 0 ? slides.length - 1 : current - 1
-	showSlides(current)
+	current = current == 1 ? slides.length : current - 1
+	if (offset == 0) {
+		offset = deleteNotDigits(width) * (slides.length - 1)
+	} else {
+		offset -= deleteNotDigits(width)
+	}
+	localStorage.setItem('offset', offset)
+	changeSlideIndex(current)
+	localStorage.setItem('slideIndex', current)
+	sliderInner.style.transform = `translateX(-${offset}px)`
 }
 
 slideButtons.forEach((button) => {
 	button.addEventListener('click', (e) => {
 		let target = e.target
 		if ((target && target.classList.contains('offer__slider-next')) || target.alt == 'next') {
-			hideSlides()
 			nextSlide()
 		} else if ((target && target.classList.contains('offer__slider-prev')) || target.alt == 'prev') {
-			hideSlides()
 			prevSlide()
 		}
 	})
 })
 
-hideSlides()
-showSlides(current)
+function deleteNotDigits(string) {
+	return +string.replace(/\D/g, '')
+}
+
+optionsForSlider()
+
+//*калькулятор калорий
+
+const kalResult = document.querySelector('.calculating__result span')
+let age, height, weight, activity, gender
+
+if (localStorage.getItem('gender')) {
+	gender = localStorage.getItem('gender')
+} else {
+	gender = 'female'
+	localStorage.setItem('gender', gender)
+}
+
+if (localStorage.getItem('activity')) {
+	activity = +localStorage.getItem('activity')
+} else {
+	activity = 1.375
+	localStorage.setItem('activity', activity)
+}
+
+function initLocalSettings(parentSelector, activeClass) {
+	const elements = document.querySelectorAll(`${parentSelector} div`)
+
+	elements.forEach((button) => {
+		button.classList.remove(activeClass)
+		if (button.getAttribute('id') === localStorage.getItem('gender')) {
+			button.classList.add(activeClass)
+		}
+
+		if (button.getAttribute('data-ratio') === localStorage.getItem('activity')) {
+			button.classList.add(activeClass)
+		}
+	})
+}
+
+function calcTotal() {
+	if (!age || !height || !weight) {
+		kalResult.textContent = `____`
+		return
+	} else if (gender == 'female') {
+		kalResult.textContent = Math.round((447.6 + 9.2 * weight + 3.1 * height - 4.3 * age) * activity)
+	} else {
+		kalResult.textContent = Math.round((88.36 + 13.4 * weight + 4.8 * height - 5.7 * age) * activity)
+	}
+}
+
+function getStaticInformation(parentSelector, activeClass) {
+	const elements = document.querySelectorAll(`${parentSelector} div`)
+
+	elements.forEach((button) =>
+		button.addEventListener('click', (e) => {
+			if (e.target.getAttribute('data-ratio')) {
+				activity = +e.target.getAttribute('data-ratio')
+				localStorage.setItem('activity', activity)
+			} else {
+				gender = e.target.getAttribute('id')
+				localStorage.setItem('gender', gender)
+			}
+
+			elements.forEach((button) => {
+				button.classList.remove(activeClass)
+			})
+			e.target.classList.add(activeClass)
+
+			calcTotal()
+		})
+	)
+}
+
+function getInputInformation(selector) {
+	const input = document.querySelector(selector)
+	input.addEventListener('input', () => {
+		if (input.value.match(/\D/g)) {
+			input.style.border = '1px solid red'
+		} else {
+			input.style.border = 'none'
+		}
+
+		switch (selector) {
+			case '#height':
+				height = +input.value
+				break
+			case '#weight':
+				weight = +input.value
+				break
+			case '#age':
+				age = +input.value
+				break
+		}
+		calcTotal()
+	})
+}
+
+initLocalSettings('#gender', 'calculating__choose-item_active')
+initLocalSettings('.calculating__choose_big', 'calculating__choose-item_active')
+
+getStaticInformation('#gender', 'calculating__choose-item_active')
+getStaticInformation('.calculating__choose_big', 'calculating__choose-item_active')
+
+getInputInformation('#height')
+getInputInformation('#weight')
+getInputInformation('#age')
+
+calcTotal()
