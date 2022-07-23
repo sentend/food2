@@ -1,9 +1,9 @@
-export default function slider() {
+export default function slider({ container, slide, buttonsSlide, totalCunter, currentCounter, wrapper, field }) {
 	//*слайдер
 	//TODO попроовать засунуть все картинки в сервер и брать картинки с сервера, а не верстки
 
 	const slideButtons = document.querySelectorAll('.offer__slider-counter div')
-	const slides = document.querySelectorAll('.offer__slide')
+	const slides = document.querySelectorAll(slide)
 	const sliderWrapper = document.querySelector('.offer__slider-wrapper')
 	const sliderInner = document.querySelector('.offer__slider-inner')
 	const currentSlide = document.querySelector('#current')

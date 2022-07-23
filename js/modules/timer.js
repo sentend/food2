@@ -1,6 +1,4 @@
-export default function timer() {
-	const deadline = '2022-07-17'
-
+export default function timer(id, deadline) {
 	function getTimeRemaining(endtime) {
 		const time = Date.parse(endtime) - Date.now()
 		const days = Math.floor(time / (24 * 60 * 60 * 1000))
@@ -40,5 +38,5 @@ export default function timer() {
 		}
 	}
 
-	setClock('.timer', deadline)
+	setClock(id, deadline)
 }

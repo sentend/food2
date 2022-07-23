@@ -1,3 +1,5 @@
+import { getData } from '../services/services'
+
 export default function menuCard() {
 	//*карточки с меню при использовании классов и работа с сервером db.json
 
@@ -43,25 +45,6 @@ export default function menuCard() {
 				</div>`
 			this.parent.append(element)
 		}
-	}
-
-	const getData = async (url) => {
-		const res = await fetch(url)
-		if (!res.ok) {
-			throw new Error(`Could not fetch ${url}, status ${res.status}`)
-		}
-		const transfer = await fetch('http://localhost:3000/transfer')
-		if (!transfer.ok) {
-			throw new Error(`Could not fetch for transfer, status ${transfer.status}`)
-		}
-		const awaitRes = await res.json()
-		const awaitTransfer = await transfer.json()
-		awaitRes.forEach((item) => {
-			item.transfer = awaitTransfer[0].exchangeRate
-		})
-		data = [...awaitRes]
-
-		return data
 	}
 
 	getData('http://localhost:3000/menu').then((data) => {
